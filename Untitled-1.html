@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Analisador de Senhas</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; }
+        .box { max-width: 400px; margin: auto; border: 1px solid #ccc; padding: 20px; }
+        #strength { font-weight: bold; margin-top: 10px; }
+    </style>
+    <link rel="stylesheet" href="Design.css">
+</head>
+<body>
+    <div class="box">
+        <h2>Segurança de Senha</h2>
+        <input type="text" id="passwordInput" placeholder="Digite uma senha..." oninput="analyzePassword()">
+        <div id="strength">Força: -</div>
+        
+        <hr>
+        <button onclick="generatePassword()">Gerar Senha Aleatória</button>
+        <p id="generated"></p>
+    </div>
+
+    <script>
+        function analyzePassword() {
+            const pass = document.getElementById('passwordInput').value;
+            const strengthText = document.getElementById('strength');
+            
+            // Lógica simples de verificação
+            if (pass.length === 0) strengthText.innerText = "Força: -";
+            else if (pass.length < 8) strengthText.innerText = "Força: Fraca (Muito curta)";
+            else if (/[A-Z]/.test(pass) && /[0-9]/.test(pass) && /[^A-Za-z0-9]/.test(pass)) 
+                strengthText.innerText = "Força: Forte ✅";
+            else 
+                strengthText.innerText = "Força: Média (Use símbolos e números)";
+        }
+
+        function generatePassword() {
+            const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*";
+            let retVal = "";
+            for (let i = 0; i < 12; ++i) {
+                retVal += charset.charAt(Math.floor(Math.random() * charset.length));
+            }
+            document.getElementById('generated').innerText = "Sugestão: " + retVal;
+        }
+    </script>
+</body>
+</html>
