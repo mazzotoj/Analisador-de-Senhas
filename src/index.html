@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Analise a força de senhas com detecção de padrões e gere senhas e frases-senha seguras. Tudo roda no seu navegador.">
+  <meta name="theme-color" content="#2563eb">
+  <title>Analisador de Senhas</title>
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="css/style.css">
+  <script>
+    // Aplica o tema salvo antes da renderização para evitar "piscada".
+    try { const t = localStorage.getItem('tema'); if (t) document.documentElement.dataset.theme = t; } catch (e) {}
+  </script>
+  <script type="module" src="js/app.js"></script>
+</head>
+<body>
+  <a class="skip-link" href="#conteudo">Pular para o conteúdo</a>
+
+  <header class="topbar">
+    <div class="container topbar__inner">
+      <div class="brand">
+        <svg class="brand__logo" viewBox="0 0 32 32" aria-hidden="true">
+          <path d="M16 2 4 7v8c0 7.4 5.1 13.6 12 15 6.9-1.4 12-7.6 12-15V7L16 2z" fill="currentColor"/>
+          <path d="M11 16.5l3.5 3.5L21.5 13" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <div>
+          <h1 class="brand__title">Analisador de Senhas</h1>
+          <p class="brand__subtitle">Avalie, gere e proteja suas credenciais</p>
+        </div>
+      </div>
+      <button id="theme-toggle" class="icon-btn" type="button" aria-label="Alternar tema claro/escuro" title="Alternar tema">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a9 9 0 1 0 9 9 7 7 0 0 1-9-9z" fill="currentColor"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <main id="conteudo" class="container">
+    <p class="privacy">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 1 3 5v6c0 5.5 3.8 10.7 9 12 5.2-1.3 9-6.5 9-12V5l-9-4zm0 6a3 3 0 0 1 3 3v1h1v6H8v-6h1v-1a3 3 0 0 1 3-3zm0 2a1 1 0 0 0-1 1v1h2v-1a1 1 0 0 0-1-1z" fill="currentColor"/></svg>
+      <span>Sua senha é analisada <strong>somente no seu navegador</strong> e nunca é enviada ou armazenada.</span>
+    </p>
+
+    <div class="grid">
+      <!-- ============ ANALISADOR ============ -->
+      <section class="card" aria-labelledby="titulo-analise">
+        <h2 id="titulo-analise" class="card__title">Analisar senha</h2>
+
+        <label for="senha" class="field-label">Digite uma senha</label>
+        <div class="input-group">
+          <input id="senha" type="password" autocomplete="off" autocapitalize="off" spellcheck="false"
+                 maxlength="128" placeholder="Sua senha aqui…" aria-describedby="forca-texto">
+          <button id="toggle-visibilidade" class="icon-btn icon-btn--inset" type="button"
+                  aria-label="Mostrar senha" aria-pressed="false" title="Mostrar/ocultar">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5C6.5 5 2.7 9.1 1.5 12c1.2 2.9 5 7 10.5 7s9.3-4.1 10.5-7C21.3 9.1 17.5 5 12 5zm0 11a4 4 0 1 1 0-8 4 4 0 0 1 0 8zm0-2a2 2 0 1 0 0-4 2 2 0 0 0 0 4z" fill="currentColor"/></svg>
+          </button>
+        </div>
+
+        <div class="meter" role="meter" aria-label="Força da senha" aria-valuemin="0" aria-valuemax="4" aria-valuenow="0" id="medidor">
+          <span></span><span></span><span></span><span></span><span></span>
+        </div>
+        <p id="forca-texto" class="strength-label" aria-live="polite">Digite uma senha para começar.</p>
+
+        <div id="resultado" class="result" hidden>
+          <dl class="stats">
+            <div><dt>Tentativas estimadas</dt><dd id="stat-tentativas">–</dd></div>
+            <div><dt>Entropia efetiva</dt><dd id="stat-entropia">–</dd></div>
+            <div><dt>Comprimento</dt><dd id="stat-comprimento">–</dd></div>
+          </dl>
+
+          <div id="feedback" class="feedback"></div>
+
+          <h3 class="section-title">Tempo estimado para quebrar</h3>
+          <table class="crack-table">
+            <caption class="sr-only">Tempo estimado para descobrir a senha em diferentes cenários de ataque</caption>
+            <tbody id="tempos"></tbody>
+          </table>
+
+          <h3 class="section-title">Padrões encontrados</h3>
+          <ul id="padroes" class="chips" aria-label="Padrões encontrados"></ul>
+
+          <h3 class="section-title">Composição</h3>
+          <ul id="composicao" class="checklist"></ul>
+
+          <div class="breach">
+            <label class="switch">
+              <input type="checkbox" id="verificar-vazamento">
+              <span>Verificar em vazamentos conhecidos</span>
+            </label>
+            <p class="hint">Consulta a base <em>Have I Been Pwned</em> com k-anonimato: apenas os 5 primeiros caracteres do hash SHA-1 são enviados; a senha nunca sai do navegador.</p>
+            <p id="vazamento-status" class="breach__status" aria-live="polite"></p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ GERADOR ============ -->
+      <section class="card" aria-labelledby="titulo-gerador">
+        <h2 id="titulo-gerador" class="card__title">Gerar senha</h2>
+
+        <div class="tabs" role="tablist" aria-label="Tipo de senha">
+          <button role="tab" id="tab-senha" aria-selected="true" aria-controls="painel-senha" type="button">Senha aleatória</button>
+          <button role="tab" id="tab-frase" aria-selected="false" aria-controls="painel-frase" type="button" tabindex="-1">Frase-senha</button>
+        </div>
+
+        <div class="output">
+          <input id="gerada" type="text" readonly aria-label="Senha gerada" spellcheck="false">
+          <button id="copiar" class="btn btn--primary" type="button">Copiar</button>
+          <button id="regenerar" class="icon-btn" type="button" aria-label="Gerar outra" title="Gerar outra">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17.7 6.3A8 8 0 1 0 20 12h-2a6 6 0 1 1-1.8-4.3L13 11h7V4l-2.3 2.3z" fill="currentColor"/></svg>
+          </button>
+        </div>
+        <p class="entropy">Entropia: <strong id="entropia-gerada">–</strong> <span id="entropia-nivel" class="badge"></span></p>
+
+        <div id="painel-senha" role="tabpanel" aria-labelledby="tab-senha" class="options">
+          <div class="range-row">
+            <label for="comprimento">Comprimento</label>
+            <input id="comprimento" type="range" min="8" max="64" value="16">
+            <output id="comprimento-valor" for="comprimento">16</output>
+          </div>
+          <fieldset class="checks">
+            <legend class="sr-only">Tipos de caracteres</legend>
+            <label><input type="checkbox" id="op-minusculas" checked> Minúsculas (a–z)</label>
+            <label><input type="checkbox" id="op-maiusculas" checked> Maiúsculas (A–Z)</label>
+            <label><input type="checkbox" id="op-numeros" checked> Números (0–9)</label>
+            <label><input type="checkbox" id="op-simbolos" checked> Símbolos (!@#…)</label>
+            <label class="checks__full"><input type="checkbox" id="op-ambiguos"> Evitar caracteres ambíguos (l, 1, O, 0…)</label>
+          </fieldset>
+        </div>
+
+        <div id="painel-frase" role="tabpanel" aria-labelledby="tab-frase" class="options" hidden>
+          <div class="range-row">
+            <label for="palavras">Palavras</label>
+            <input id="palavras" type="range" min="3" max="10" value="5">
+            <output id="palavras-valor" for="palavras">5</output>
+          </div>
+          <div class="select-row">
+            <label for="separador">Separador</label>
+            <select id="separador">
+              <option value="-">Hífen ( - )</option>
+              <option value=".">Ponto ( . )</option>
+              <option value="_">Sublinhado ( _ )</option>
+              <option value=" ">Espaço</option>
+            </select>
+          </div>
+          <fieldset class="checks">
+            <legend class="sr-only">Opções da frase-senha</legend>
+            <label><input type="checkbox" id="op-capitalizar" checked> Iniciais maiúsculas</label>
+            <label><input type="checkbox" id="op-numero" checked> Incluir um número</label>
+          </fieldset>
+          <p class="hint" id="info-lista"></p>
+        </div>
+
+        <button id="analisar-gerada" class="btn btn--ghost btn--block" type="button">Analisar esta senha</button>
+
+        <details class="tips">
+          <summary>Boas práticas</summary>
+          <ul>
+            <li>Prefira senhas longas: 12+ caracteres ou frases-senha de 4+ palavras.</li>
+            <li>Use uma senha diferente para cada serviço.</li>
+            <li>Guarde suas senhas em um gerenciador de senhas.</li>
+            <li>Ative a autenticação em dois fatores sempre que possível.</li>
+          </ul>
+        </details>
+      </section>
+    </div>
+  </main>
+
+  <footer class="footer">
+    <div class="container">
+      <p>Analisador de Senhas v2.0 · Projeto Integrador — Análise e Desenvolvimento de Sistemas, Universidade de Vassouras</p>
+      <p><a href="https://github.com/mazzotoj/Analisador-de-Senhas" rel="noopener">Código-fonte no GitHub</a></p>
+    </div>
+  </footer>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <noscript><p class="noscript">Este aplicativo precisa de JavaScript habilitado.</p></noscript>
+</body>
+</html>
